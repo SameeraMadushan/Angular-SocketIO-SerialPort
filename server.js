@@ -3,12 +3,12 @@ const path = require('path');
 const http = require('http');
 const socketIO = require('socket.io');
 const app = express();
-const SerialPort = require("serialport");
 const port = process.env.PORT || 3000;
+var mqtt = require('mqtt');
+var client = mqtt.connect('mqtt://13.127.35.159:1883'); //methanta local host dapan AWS dala
 
 var DataFromArduino = "on";
 var DataToWeb = "on";
-var serialPort;
 
 
 //----------------------------------------------SERVER MANAGEMENT--------------------------------------------
@@ -27,28 +27,36 @@ server.listen(port, () => {
 });
 
 
-//--------------------------------------SOCKET COMMUNICATION WITH BROWSER-------------------------------
+//--------------------------------------MQTT/SOCKET COMMUNICATION WITH BROWSER-------------------------------
 const io = socketIO(server);
 
 var LedStatus = 'OFF';
+var mqttMessage ='';
+
+//------subscribe to MQTT topic-----------
+client.on('connect', function () {
+    client.subscribe('outTopic');
+    client.publish('outTopic', 'Hello mqtt');
+});
+
+client.on('message', function (topic, message) {
+    // message is Buffer
+    console.log(message.toString());
+    mqttMessage=message.toString();
+    io.sockets.emit('getLedStatus', mqttMessage);
+    // client.end()
+  })
+//---------------------------------------
 
 io.on('connection', (socket) => {
     console.log('Web page connected to socket connection!');
-    
-    //send incoming data from arduino to web browser
-    socket.emit('getLedStatus',DataToWeb);
-    
-    //send incoming data from web browser to arduino
-    socket.on('setLedStatus',(data) => {
-        serialPort.write(data + 'E');
 
-        //untill arduino connected i need to check
-        socket.emit('updateData', data);
-      });
+    //send incoming data from mqtt to web browser initially
+    // socket.emit('getLedStatus', mqttMessage);
 
-    //update web page values when button press pass values to the socket
-    socket.on('update', (data) => {
-        // socket.emit('updateData', (data))
+    //send incoming data from web browser to mqtt
+    socket.on('setLedStatus', (data) => {
+        client.publish('outTopic', data);
     });
 
     //print disconnected when web page closed
@@ -56,60 +64,3 @@ io.on('connection', (socket) => {
         console.log('Web page disconnected!');
     });
 });
-
-
-
-///--------------------------------------------SERIAL COMMUNICATION----------------------------------------
-
-var portName = 'COM3'; //change this to your Arduino port
-    
-serialPort = new SerialPort(portName, {
-    baudRate: 9600
-});
-
-serialPort.on("open", () => {
-    console.log('Arduino board connected to serial port!');
-    
-    // Listens to incoming data from Arduino board
-    serialPort.on('data', (data) => {
-        DataFromArduino += data.toString();
-        if (DataFromArduino .indexOf('E') >= 0 && DataFromArduino .indexOf('B') >= 0) {
-        DataToWeb = DataFromArduino .substring(DataFromArduino .indexOf('B') + 1, DataFromArduino .indexOf('E'));
-        DataFromArduino = '';
-        }
-        
-        // send the incoming data to browser to updateData method in socket section with websockets.
-        io.emit('update', DataToWeb);
-    });  
-});
-
-
-
-
-///-------------------------ARDUINO SETUP WITH SERIAL PORT---------
-/*
-// LED read vars
-String inputString = "";         // a string to hold incoming data
-boolean toggleComplete = false;  // whether the string is complete
-
-// initialize serial:
-Serial.begin(9600);
-
-
-// Recieve data from Node and write it to a String
-   while (Serial.available() && toggleComplete == false) {
-    char inChar = (char)Serial.read();
-    if(inChar == 'E'){ // end character for toggle LED
-     toggleComplete = true;
-    }
-    else{
-      inputString += inChar; 
-    }
-  }
-
-  if(!Serial.available() && toggleComplete == true)
-  {
-    ///light up the LED
-  }
-
-*/

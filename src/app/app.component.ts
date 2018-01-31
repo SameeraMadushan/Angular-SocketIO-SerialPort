@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import * as io from 'socket.io-client';
+import { Observable } from 'rxjs/Rx';
+import { parse } from 'querystring';
+import {ChartsModule, Color} from 'ng2-charts';
 
 @Component({
   selector: 'app-root',
@@ -9,74 +12,88 @@ import * as io from 'socket.io-client';
 export class AppComponent implements OnInit {
 
   socket: any;
-  cards: any;
-  LedStatus: any;
+  image: any;
+  power: any;
+  obsvr: any;
+  temperature: any;
+
+  public chartType: string = 'doughnut';
+
+  public chartData: Array<any> = [0, 20];
+
+  public chartLabels: Array<any> = ['Temperature'];
+
+  public chartColors: Array<any> = [{
+    hoverBorderColor: ['rgba(0, 0, 0, 0.1)', "rgba(0, 0, 0)"],
+    hoverBorderWidth: 0,
+    backgroundColor: ["#F7464A", "#FFFFFF"],
+    hoverBackgroundColor: ["#FF5A5E", "#FFFFFF"]
+  }];
+
+  labels:string[] = ['Temperature','asss'];
+  data:number[] = [0,20];
+  type:string = 'doughnut';
+  
+  colorsUndefined: Array<Color>;
+
+  public chartOptions: any = {
+    responsive: true
+  };
 
   constructor() {
-    this.socket = io();
+    this.socket = io('http://13.127.35.159:3000/');
   }
 
   public ngOnInit(): void {
-
-    ///get and set initial value from the socket
-    this.socket.on('getLedStatus', (ledStatus) => {
-      this.LedStatus = ledStatus;
-      console.log(ledStatus + ' Initial Values');
-    });
-    setTimeout(() => {
-      //change led status when page open
+    this.power = "off";
+    this.changeLedStatus();
+    this.temperature = "0";
+    this.chartData[0]= parseInt(this.temperature);
+    this.obsvr = this.getLatestUpdate().subscribe(message => {
+      // this.power = message;
+      this.temperature = message;
       this.changeLedStatus();
-      console.log(this.LedStatus);
-    }, 1000);
+      this.chartData[0]= parseInt(message);
+      console.log(parseInt(message))
+    })
   }
-
-  changeLedStatus() {
-    if (this.LedStatus == "on") {
-      this.cards = [{
-        title: "LED STATUS " + this.LedStatus,
-        button: "OFF",
-        url: "../assets/On.png"
-      }];
-    }
-    else if (this.LedStatus == "off") {
-      this.cards = [{
-        title: "LED STATUS " + this.LedStatus,
-        button: "ON",
-        url: "../assets/Off.png"
-      }];
-    }
-  }
-
 
   onclick(command: any) {
     if (command == "ON") {
       this.socket.emit("setLedStatus", "on");
-      // this.socket.emit("update", "on");
-      this.socket.on('updateData', (ledStatus) => {
-        this.LedStatus = ledStatus;
-        console.log(ledStatus + ' ON pressed');
-      });
-      setTimeout(() => {
-        //set changes acording to the client message
-        this.changeLedStatus();
-        console.log("ON");
-      }, 500);
-      
     }
-    else if (command == "OFF") {
-      this.socket.emit("setLedStatus", "off");
-      // this.socket.emit("update", "off");
-      this.socket.on('updateData', (ledStatus) => {
-        this.LedStatus = ledStatus;
-        console.log(ledStatus + ' OFF pressed');
+  }
+
+  getLatestUpdate(): any {
+    let observable = new Observable(observer => {
+      this.socket.on('getLedStatus', (data) => {
+        observer.next(data);
       });
-      setTimeout(() => {
-        //set changes acording to the client message
-        this.changeLedStatus();
-        console.log("OFF");
-      }, 500);
-      
+      return () => {
+        this.socket.disconnect();
+      };
+    });
+    return observable;
+  }
+
+  changeLedStatus() {
+    if (this.power == "on") {
+      this.image = "../assets/On.png";
     }
+    else if (this.power == "off") {
+      this.image = "../assets/Off.png";
+    }
+  }
+
+
+
+
+  public chartClicked(e: any): void { 
+        
+  } 
+
+  public chartHovered(e: any): void { 
+      
   }
 
 }
