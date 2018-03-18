@@ -5,7 +5,7 @@ const socketIO = require('socket.io');
 const app = express();
 const port = process.env.PORT || 3000;
 var mqtt = require('mqtt');
-var client = mqtt.connect('mqtt://13.127.35.159:1883'); //methanta local host dapan AWS dala
+var client = mqtt.connect('mqtt://13.126.250.117:1883'); //methanta local host dapan AWS dala
 
 var DataFromArduino = "on";
 var DataToWeb = "on";
@@ -37,6 +37,7 @@ var mqttMessage ='';
 client.on('connect', function () {
     client.subscribe('outTopic');
     client.publish('outTopic', 'Hello mqtt');
+    // io.sockets.emit('getLedStatus', mqttMessage);
 });
 
 client.on('message', function (topic, message) {
