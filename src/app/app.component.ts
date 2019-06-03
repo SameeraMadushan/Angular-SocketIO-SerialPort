@@ -17,11 +17,13 @@ export class AppComponent implements OnInit {
   power: any;
   obsvr: any;
   temperature: any;
+  humidity: any;
   doughnutChart : any;
+  doughnutChart2 : any;
 
 
   constructor() {
-    this.socket = io('http://localhost:3000/');
+    this.socket = io('http://159.65.147.14:3030/');
   }
 
   public ngOnInit(): void {
@@ -30,7 +32,7 @@ export class AppComponent implements OnInit {
     const chartHtml = document.getElementById('myChart'); 
     const doughnutGraphData = {
       datasets: [{
-        data: [1, 20],
+        data: [1, 70],
         backgroundColor: ['#ff6384', '#FFFF'],
       }],
       labels: [
@@ -50,6 +52,29 @@ export class AppComponent implements OnInit {
         circumference: 3.12
       }
     });
+    const chartHtml2 = document.getElementById('myChart2'); 
+    const doughnutGraphData2 = {
+      datasets: [{
+        data: [1, 20],
+        backgroundColor: ['#ff6384', '#FFFF'],
+      }],
+      labels: [
+        'Temperature'
+      ]
+    };
+    // this.doughnutChart2 = new Chart(chartHtml2, {
+    //   type: 'doughnut',
+    //   data: doughnutGraphData2,
+    //   options: {
+    //     animation:{
+    //       animateRotate : true,
+    //       animateScale : false
+    //     },
+    //     cutoutPercentage: 50,
+    //     rotation : 9.42,
+    //     circumference: 3.12
+    //   }
+    // });
     //------------------------------------------------------------------------------
 
     this.temperature = "0";
@@ -66,6 +91,21 @@ export class AppComponent implements OnInit {
       this.doughnutChart.update(0);       //update JSON
 
     })
+    
+    // this.humidity = "0";
+    // this.obsvr = this.getLatestUpdate2().subscribe(message => {
+    //   this.humidity = message;
+
+    //   //pop old data and push new data to the JSON array
+    //   this.doughnutChart2.data.datasets.forEach((dataset) => {
+    //     dataset.data.pop();
+    //     dataset.data.pop();
+    //     dataset.data.push(message);
+    //     dataset.data.push("30");
+    //   });
+    //   this.doughnutChart2.update(0);       //update JSON
+
+    // })
   }
 
   getLatestUpdate(): any {
@@ -79,6 +119,18 @@ export class AppComponent implements OnInit {
     });
     return observable;
   }
+
+  // getLatestUpdate2(): any {
+  //   let observable = new Observable(observer => {
+  //     this.socket.on('humidity', (data) => {
+  //       observer.next(data);
+  //     });
+  //     return () => {
+  //       this.socket.disconnect();
+  //     };
+  //   });
+  //   return observable;
+  // }
 
 
   onclick(command: any) {
